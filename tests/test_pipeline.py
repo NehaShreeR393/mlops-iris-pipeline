@@ -6,9 +6,24 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import joblib
 import pytest
+
+import app as app_module
 from train import train_model
 from app import app as flask_app
+
+
+@pytest.fixture(scope="session", autouse=True)
+def train_before_tests():
+    """
+    Train the model once before any test runs, and load it into the Flask
+    app's global `model` variable. This is needed because app.py loads the
+    model from disk at import time — but on a fresh checkout (like CI),
+    no trained model file exists yet until this fixture creates one.
+    """
+    train_model()
+    app_module.model = joblib.load(app_module.MODEL_PATH)
 
 
 def test_train_model_returns_good_accuracy():
